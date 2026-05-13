@@ -11,7 +11,9 @@ pipeline {
 
         stage('Clone Code') {
             steps {
-                git 'https://github.com/sampath-id/docker-hub.git'
+                git branch: 'main',          // ✅ was 'master', change to 'main'
+                    url: 'https://github.com/sampath-id/docker-hub.git',
+                    credentialsId: 'sampath-id'  // ✅ add credentials too
             }
         }
 
