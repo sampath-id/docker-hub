@@ -11,7 +11,7 @@ pipeline {
 
         stage('Clone Code') {
             steps {
-                git 'git@github.com:sampath-id/docker-hub'
+                git 'https://github.com/sampath-id/docker-hub.git'
             }
         }
 
