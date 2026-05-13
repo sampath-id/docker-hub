@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         LOCAL_IMAGE      = "my-app:latest"
-        DOCKERHUB_IMAGE  = "sampathid/my-app:latest"
+        DOCKERHUB_IMAGE  = "sampath/my-app:latest"
     }
     stages {
 
