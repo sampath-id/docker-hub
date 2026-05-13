@@ -1,38 +1,36 @@
-pipeline {
+
+  pipeline {
     agent any
+
     environment {
-        IMAGE_NAME = 'sampath-id/my-app'  // ✅ dockerhub-username/image
-        IMAGE_TAG  = 'latest'
+        LOCAL_IMAGE = "my-app:latest"
+        DOCKERHUB_IMAGE = "sampathid/my-app:latest"
     }
+
     stages {
-        stage('Clone Code') {
+
+        stage('Tag Image') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/sampath-id/docker-hub.git',
-                    credentialsId: 'sampath-id'
+                sh 'docker tag $LOCAL_IMAGE $DOCKERHUB_IMAGE'
             }
         }
-        stage('Build Docker Image') {
-            steps {
-                // ✅ Correct tag format
-                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
-            }
-        }
-        stage('Login Docker Hub') {
+
+        stage('Login') {
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
+                    credentialsId: 'docker-hub-creds',
                     usernameVariable: '8050050150',
-                    passwordVariable: 'S@mp@th502'
+                    passwordVariable: 'S@Mp@th502'
                 )]) {
                     sh 'echo $PASS | docker login -u $USER --password-stdin'
                 }
             }
         }
-        stage('Push Docker Image') {
+
+        stage('Push') {
             steps {
-                sh 'docker push ${IMAGE_NAME}:${IMAGE_TAG}'
+                sh 'docker push $DOCKERHUB_IMAGE'
             }
         }
     }
-}
+}          
