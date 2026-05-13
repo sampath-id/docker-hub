@@ -1,28 +1,23 @@
-
 pipeline {
     agent any
-
     environment {
-        IMAGE_NAME = "my-app:latest"
-        IMAGE_TAG  = "v1"
+        IMAGE_NAME = 'sampath-id/my-app'  // ✅ dockerhub-username/image
+        IMAGE_TAG  = 'latest'
     }
-
     stages {
-
         stage('Clone Code') {
             steps {
-                git branch: 'main',          // ✅ was 'master', change to 'main'
+                git branch: 'main',
                     url: 'https://github.com/sampath-id/docker-hub.git',
-                    credentialsId: 'sampath-id'  // ✅ add credentials too
+                    credentialsId: 'sampath-id'
             }
         }
-
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME:$IMAGE_TAG .'
+                // ✅ Correct tag format
+                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
             }
         }
-
         stage('Login Docker Hub') {
             steps {
                 withCredentials([usernamePassword(
@@ -30,15 +25,13 @@ pipeline {
                     usernameVariable: '8050050150',
                     passwordVariable: 'S@mp@th502'
                 )]) {
-
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
                 }
             }
         }
-
         stage('Push Docker Image') {
             steps {
-                sh 'docker push $IMAGE_NAME:$IMAGE_TAG'
+                sh 'docker push ${IMAGE_NAME}:${IMAGE_TAG}'
             }
         }
     }
