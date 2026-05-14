@@ -1,9 +1,17 @@
 pipeline {
     agent any
+
     environment {
-        LOCAL_IMAGE      = "my-app:latest"
-        DOCKERHUB_IMAGE  = "sampath/my-app:latest"
+
+        AWS_ACCOUNT_ID = "236726878226"
+        AWS_REGION     = "ap-south-1"
+        ECR_REPO       = "app"
+
+        LOCAL_IMAGE = "my-app:latest"
+
+        ECR_IMAGE = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:latest"
     }
+
     stages {
 
         stage('Clone Code') {
@@ -14,37 +22,66 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${LOCAL_IMAGE} ."  // ✅ double quotes
+                sh "docker build -t ${LOCAL_IMAGE} ."
             }
         }
 
-        stage('Tag Image') {
+        stage('Configure AWS Credentials') {
             steps {
-                sh "docker tag ${LOCAL_IMAGE} ${DOCKERHUB_IMAGE}"  // ✅ double quotes
-            }
-        }
 
-        stage('Login') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'docker-hub-creds',
-                    usernameVariable: 'USER',
-                    passwordVariable: 'PASS'
-                )]) {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds'
+                ]]) {
+
                     sh '''
-                        echo "$PASS" | docker login -u "$USER" --password-stdin
-                    '''                                // ✅ triple quotes for credentials
+                    aws sts get-caller-identity
+                    '''
                 }
             }
         }
 
-        stage('Push') {
+        stage('Login to Amazon ECR') {
             steps {
-                sh "docker push ${DOCKERHUB_IMAGE}"   // ✅ double quotes
+
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds'
+                ]]) {
+
+                    sh '''
+                    aws ecr get-login-password --region $AWS_REGION | \
+                    docker login --username AWS --password-stdin \
+                    $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+                    '''
+                }
             }
         }
 
+        stage('Tag Docker Image') {
+            steps {
+                sh "docker tag ${LOCAL_IMAGE} ${ECR_IMAGE}"
+            }
+        }
+
+        stage('Push Image to ECR') {
+            steps {
+                sh "docker push ${ECR_IMAGE}"
+            }
+        }
+
+    }
+
+    post {
+
+        success {
+            echo 'Docker image pushed to Amazon ECR successfully!'
+        }
+
+        failure {
+            echo 'Pipeline failed!'
+        }
     }
 }
